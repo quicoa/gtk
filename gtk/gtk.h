@@ -209,6 +209,7 @@
 #include <gtk/gtkpopovermenu.h>
 #include <gtk/gtkpopovermenubar.h>
 #include <gtk/gtkprintcontext.h>
+#include <gtk/gtkprintdialog.h>
 #include <gtk/gtkprintoperation.h>
 #include <gtk/gtkprintoperationpreview.h>
 #include <gtk/gtkprintsettings.h>
