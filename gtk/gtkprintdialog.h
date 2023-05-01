@@ -45,6 +45,13 @@ void            gtk_print_dialog_set_title              (GtkPrintDialog       *s
                                                          const char           *title);
 
 GDK_AVAILABLE_IN_4_12
+const char *    gtk_print_dialog_get_accept_label       (GtkPrintDialog       *self);
+
+GDK_AVAILABLE_IN_4_12
+void            gtk_print_dialog_set_accept_label       (GtkPrintDialog       *self,
+                                                         const char           *accept_label);
+
+GDK_AVAILABLE_IN_4_12
 gboolean        gtk_print_dialog_get_modal              (GtkPrintDialog       *self);
 
 GDK_AVAILABLE_IN_4_12

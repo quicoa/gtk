@@ -70,6 +70,7 @@ struct _GtkPrintDialog
   unsigned int token;
   unsigned int response_signal_id;
 
+  char *accept_label;
   char *title;
 
   unsigned int modal : 1;
@@ -77,7 +78,8 @@ struct _GtkPrintDialog
 
 enum
 {
-  PROP_DEFAULT_PAGE_SETUP = 1,
+  PROP_ACCEPT_LABEL = 1,
+  PROP_DEFAULT_PAGE_SETUP,
   PROP_MODAL,
   PROP_PRINT_SETTINGS,
   PROP_TITLE,
@@ -106,6 +108,7 @@ gtk_print_dialog_finalize (GObject *object)
   g_clear_object (&self->exported_window);
   g_clear_object (&self->print_settings);
   g_clear_object (&self->default_page_setup);
+  g_free (self->accept_label);
   g_free (self->title);
 
   G_OBJECT_CLASS (gtk_print_dialog_parent_class)->finalize (object);
@@ -121,6 +124,10 @@ gtk_print_dialog_get_property (GObject      *object,
 
   switch (property_id)
     {
+    case PROP_ACCEPT_LABEL:
+      g_value_set_string (value, self->accept_label);
+      break;
+
     case PROP_DEFAULT_PAGE_SETUP:
       g_value_set_object (value, self->default_page_setup);
       break;
@@ -153,6 +160,10 @@ gtk_print_dialog_set_property (GObject      *object,
 
   switch (prop_id)
     {
+    case PROP_ACCEPT_LABEL:
+      gtk_print_dialog_set_accept_label (self, g_value_get_string (value));
+      break;
+
     case PROP_DEFAULT_PAGE_SETUP:
       gtk_print_dialog_set_default_page_setup (self, g_value_get_object (value));
       break;
@@ -183,6 +194,19 @@ gtk_print_dialog_class_init (GtkPrintDialogClass *class)
   object_class->finalize = gtk_print_dialog_finalize;
   object_class->get_property = gtk_print_dialog_get_property;
   object_class->set_property = gtk_print_dialog_set_property;
+
+  /**
+   * GtkPrintDialog:accept-label: (attributes org.gtk.Property.get=gtk_print_dialog_get_accept_label org.gtk.Property.set=gtk_print_dialog_set_accept_label)
+   *
+   * A label that may be shown on the accept button of a print dialog
+   * that is presented by [method@Gtk.PrintDialog.prepare_print].
+   *
+   * Since: 4.12
+   */
+  properties[PROP_ACCEPT_LABEL] =
+      g_param_spec_string ("accept-label", NULL, NULL,
+                           NULL,
+                           G_PARAM_READWRITE|G_PARAM_STATIC_STRINGS|G_PARAM_EXPLICIT_NOTIFY);
 
   /**
    * GtkPrintDialog:default-page-setup: (attributes org.gtk.Property.get=gtk_print_dialog_get_default_page_setup org.gtk.Property.set=gtk_print_dialog_set_default_page_setup)
@@ -348,7 +372,7 @@ gtk_print_dialog_set_print_settings (GtkPrintDialog   *self,
  * print dialog.
  *
  * Returns: the title
- 
+ *
  * Since: 4.12
  */
 const char *
@@ -386,6 +410,55 @@ gtk_print_dialog_set_title (GtkPrintDialog *self,
   self->title = new_title;
 
   g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_TITLE]);
+}
+
+/**
+ * gtk_print_dialog_get_accept_label:
+ * @self: a `GtkPrintDialog`
+ *
+ * Returns the label that will be shown on the
+ * accept button of the print dialog.
+ *
+ * Returns: the accept label
+ *
+ * Since: 4.12
+ */
+const char *
+gtk_print_dialog_get_accept_label (GtkPrintDialog *self)
+{
+  g_return_val_if_fail (GTK_IS_PRINT_DIALOG (self), NULL);
+
+  return self->accept_label;
+}
+
+/**
+ * gtk_print_dialog_set_accept_label:
+ * @self: a `GtkPrintDialog`
+ * @accept_label: the new accept label
+ *
+ * Sets the label that will be shown on the
+ * accept button of the print dialog shown for
+ * [method@Gtk.PrintDialog.prepare_print].
+ *
+ * Since: 4.12
+ */
+void
+gtk_print_dialog_set_accept_label (GtkPrintDialog *self,
+                                   const char     *accept_label)
+{
+  char *new_label;
+
+  g_return_if_fail (GTK_IS_PRINT_DIALOG (self));
+  g_return_if_fail (accept_label != NULL);
+
+  if (g_strcmp0 (self->accept_label, accept_label) == 0)
+    return;
+
+  new_label = g_strdup (accept_label);
+  g_free (self->accept_label);
+  self->accept_label = new_label;
+
+  g_object_notify_by_pspec (G_OBJECT (self), properties[PROP_ACCEPT_LABEL]);
 }
 
 /* }}} */
@@ -629,6 +702,8 @@ prepare_print_window_handle_exported (GtkWindow  *window,
 
   g_variant_builder_init (&opt_builder, G_VARIANT_TYPE_VARDICT);
   g_variant_builder_add (&opt_builder, "{sv}", "handle_token", g_variant_new_string (handle_token));
+  if (self->accept_label)
+    g_variant_builder_add (&opt_builder, "{sv}", "accept_label", g_variant_new_string (self->accept_label));
   options = g_variant_builder_end (&opt_builder);
 
   if (self->print_settings)
