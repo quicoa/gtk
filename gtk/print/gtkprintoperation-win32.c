@@ -81,6 +81,8 @@ typedef struct {
 
 static void win32_poll_status (GtkPrintOperation *op);
 
+static gboolean win32_poll_status_timeout (GtkPrintOperation *op);
+
 static const GUID myIID_IPrintDialogCallback  = {0x5852a2c3,0x6530,0x11d1,{0xb6,0xa3,0x0,0x0,0xf8,0x75,0x7b,0xf9}};
 
 #if !defined (_MSC_VER) && !defined (HAVE_IPRINTDIALOGCALLBACK)
@@ -516,6 +518,20 @@ win32_end_page (GtkPrintOperation *op,
   EndPage (op_win32->hdc);
 }
 
+static void
+win32_set_timeout_name (GtkPrintOperation *op)
+{
+  GSource *source;
+  GtkPrintOperationWin32 *op_win32 = op->priv->platform_data;
+
+  op_win32->timeout_id = g_timeout_add (STATUS_POLLING_TIME,
+                                        (GSourceFunc)win32_poll_status_timeout,
+                                        op);
+
+  source = g_main_context_find_source_by_id (NULL, op_win32->timeout_id);
+  g_source_set_static_name (source, "[gtk] win32_poll_status_timeout");
+}
+
 static gboolean
 win32_poll_status_timeout (GtkPrintOperation *op)
 {
@@ -527,12 +543,9 @@ win32_poll_status_timeout (GtkPrintOperation *op)
   g_object_ref (op);
   win32_poll_status (op);
 
-  if (!gtk_print_operation_is_finished (op)) {
-    op_win32->timeout_id = g_timeout_add (STATUS_POLLING_TIME,
-					  (GSourceFunc)win32_poll_status_timeout,
-					  op);
-    gdk_source_set_static_name_by_id (op_win32->timeout_id, "[gtk] win32_poll_status_timeout");
-  }
+  if (!gtk_print_operation_is_finished (op))
+    win32_set_timeout_name (op);
+
   g_object_unref (op);
   return FALSE;
 }
@@ -572,10 +585,7 @@ win32_end_run (GtkPrintOperation *op,
     {
       op_win32->printerHandle = printerHandle;
       win32_poll_status (op);
-      op_win32->timeout_id = g_timeout_add (STATUS_POLLING_TIME,
-					    (GSourceFunc)win32_poll_status_timeout,
-					    op);
-      gdk_source_set_static_name_by_id (op_win32->timeout_id, "[gtk] win32_poll_status_timeout");
+      win32_set_timeout_name (op);
     }
   else
     /* Dunno what happened, pretend its finished */
