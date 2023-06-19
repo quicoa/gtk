@@ -248,10 +248,7 @@ endif
 
 # Compiler flags
 if cc.get_id() == 'msvc'
-  # Compiler options taken from msvc_recommended_pragmas.h
-  # in GLib, based on _Win32_Programming_ by Rector and Newcomer
   test_cflags = [
-    '-FImsvc_recommended_pragmas.h',
     '-D_USE_MATH_DEFINES',
     '-utf-8',
     '-Zc:preprocessor'
@@ -365,6 +362,47 @@ glib_dep       = dependency('glib-2.0', version: glib_req)
 gobject_dep    = dependency('gobject-2.0', version: glib_req)
 if os_win32
   giowin32_dep = dependency('gio-windows-2.0', version: glib_req, required: win32_enabled)
+  if cc.get_id() == 'msvc'
+    # We want to try harder to include msvc_recommended_pragmas.h, even
+    # if it is not in %INCLUDE%, by looking into GLib's includedir if it
+    # is found, or in GLib's subproject directory if building it as a
+    # subproject
+    msvc_force_include_h = 'msvc_recommended_pragmas.h'
+    msvc_force_include_h_cflags = []
+    if glib_dep.type_name() == 'pkgconfig'
+      msvc_force_include_dir = glib_dep.get_variable(pkgconfig : 'includedir') / 'glib-2.0'
+    elif glib_dep.type_name() == 'internal'
+      glib_subproject_dir = meson.global_source_root() / 'subprojects' / 'glib'
+
+      # The location of msvc_recommended_pragmas.h differ in glib's
+      # source tree after glib-2.77.0
+      msvc_force_include_dir = glib_dep.version().version_compare('>=2.77.0') ? \
+        glib_subproject_dir / 'glib' : \
+        glib_subproject_dir
+    endif
+    msvc_force_include_h_cflags += \
+      '-FI@0@/@1@'.format(msvc_force_include_dir, msvc_force_include_h)
+    msvc_force_include_h_cflags += '-FI@0@'.format(msvc_force_include_h)
+
+    c_fi_carg_found = false
+    cxx_fi_carg_found = false
+    foreach fi_carg : msvc_force_include_h_cflags
+      if not c_fi_carg_found
+        checked_fi_carg = cc.get_supported_arguments(fi_carg)
+        if checked_fi_carg.length() != 0
+          add_project_arguments(checked_fi_carg, language: 'c')
+          c_fi_carg_found = true
+        endif
+      endif
+      if cxx.get_id() == 'msvc' and not cxx_fi_carg_found
+        checked_fi_cxxarg = cxx.get_supported_arguments(fi_carg)
+        if checked_fi_cxxarg.length() != 0
+          add_project_arguments(checked_fi_cxxarg, language: 'cpp')
+          cxx_fi_carg_found = true
+        endif
+      endif
+    endforeach
+  endif
 endif
 if os_unix
   giounix_dep  = dependency('gio-unix-2.0', version: glib_req, required: false)
