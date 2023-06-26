@@ -30,7 +30,6 @@
 #include <glib.h>
 #include <glib/gi18n-lib.h>
 #include <gtk/gtk.h>
-#include "gtkwidgetprivate.h"
 
 #include "gtkprintoperation-private.h"
 #include "gtkprint-win32.h"
