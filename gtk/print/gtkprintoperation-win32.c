@@ -34,7 +34,6 @@
 
 #include "gtkprintoperation-private.h"
 #include "gtkprint-win32.h"
-#include "gtkprivate.h"
 #include "win32/gdkprivate-win32.h"
 
 #define MAX_PAGE_RANGES 20
@@ -1419,8 +1418,6 @@ pageDlgProc (HWND wnd, UINT message, WPARAM wparam, LPARAM lparam)
       gtk_widget_set_visible (op->priv->custom_widget, TRUE);
       gtk_widget_set_visible (plug, TRUE);
 
-      /* This dialog is modal, so we grab the embed widget */
-      gtk_grab_add (plug);
       return FALSE;
     }
   else if (message == WM_DESTROY)
