@@ -1,0 +1,13 @@
+name: Meson CI
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Configure
+      run: meson setup _build
+    - name: Compile
+      run: meson compile -C _build
