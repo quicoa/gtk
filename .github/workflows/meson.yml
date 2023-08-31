@@ -8,7 +8,7 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     - name: Install dependencies
-      run: sudo DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --yes --quiet meson libharfbuzz-dev libglib2.0-dev libpango1.0-dev libfribidi-dev libepoxy-dev libatk1.0-dev libxkbcommon-dev libwayland-dev
+      run: sudo DEBIAN_FRONTEND=noninteractive apt-get install --no-install-recommends --yes --quiet meson libharfbuzz-dev libglib2.0-dev libpango1.0-dev libfribidi-dev libepoxy-dev libatk1.0-dev libxkbcommon-dev libwayland-dev wayland-protocols
     - name: Configure
       run: meson setup _build
     - name: Compile
